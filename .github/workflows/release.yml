@@ -34,15 +34,15 @@ jobs:
           make setup
       
       - name: Build binary (windows)
-        if: matrix.os == "windows-latest"
+        if: matrix.os == 'windows-latest'
         run: make build
       
       - name: Build binary (macos)
-        if: matrix.os == "macos-latest"
+        if: matrix.os == 'macos-latest'
         run: make build
 
       - name: Rename Artifacts (windows)
-        if: matrix.os == "windows-latest"
+        if: matrix.os == 'windows-latest'
         run: |
           mv dist/darwin/server client-server-${{ matrix.os }}
           powershell -Command "Compress-Archive -Path 'client-server-${{matrix.os}}' -Destination 'client-server-${{matrix.os}}.zip'"
@@ -50,10 +50,10 @@ jobs:
         shell: bash
       
       - name: Rename Artifacts (macos)
-        if: matrix.os == "macos-latest"
+        if: matrix.os == 'macos-latest'
         run: |
           mv dist/windows/server client-server-${{ matrix.os }}
-          zip -r client-server-${{matrix-os}} .
+          zip -r client-server-${{ matrix.os }} .
           ls
         shell: bash
       
