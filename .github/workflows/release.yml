@@ -55,7 +55,7 @@ jobs:
         run: |
           ls
           mv dist/darwin/server client-server-${{ matrix.os }}
-          zip -r client-server-${{ matrix.os }} .
+          zip -r client-server-${{ matrix.os }} client-server-${{matrix.os}}
           ls
         shell: bash
       
