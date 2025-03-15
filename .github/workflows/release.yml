@@ -45,7 +45,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           ls
-          mv dist/darwin/server client-server-${{ matrix.os }}
+          mv dist/windows/server client-server-${{ matrix.os }}
           powershell -Command "Compress-Archive -Path 'client-server-${{matrix.os}}' -Destination 'client-server-${{matrix.os}}.zip'"
           ls
         shell: bash
@@ -54,7 +54,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           ls
-          mv dist/windows/server client-server-${{ matrix.os }}
+          mv dist/darwin/server client-server-${{ matrix.os }}
           zip -r client-server-${{ matrix.os }} .
           ls
         shell: bash
