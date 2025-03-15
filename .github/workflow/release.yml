@@ -1,0 +1,106 @@
+name: build and release VC-code extension server binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version number
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: CodeMate-AI/CLIENT_SERVER
+          token: ${{secrets.ACCESS_TOKEN}}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Setup Project 
+        run: |
+          make install 
+          make setup
+      
+      - name: Build binary (windows)
+        if: matrix.os == "windows-latest"
+        run: make build
+      
+      - name: Build binary (macos)
+        if: matrix.os == "macos-latest"
+        run: make build
+
+      - name: Rename Artifacts (windows)
+        if: matrix.os == "windows-latest"
+        run: |
+          mv dist/darwin/server client-server-${{ matrix.os }}
+          powershell -Command "Compress-Archive -Path 'client-server-${{matrix.os}}' -Destination 'client-server-${{matrix.os}}.zip'"
+          ls
+        shell: bash
+      
+      - name: Rename Artifacts (macos)
+        if: matrix.os == "macos-latest"
+        run: |
+          mv dist/windows/server client-server-${{ matrix.os }}
+          zip -r client-server-${{matrix-os}} .
+          ls
+        shell: bash
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{matrix.os}}
+          path: client-server-${{matrix.os}}.zip
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create Git Tag
+        env: 
+            GITHUB_TOKEN: ${{secrets.GH_TOKEN}}
+        run: |
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display Downloaded Files
+        run: ls -R artifacts
+
+      - name: Create GitHub Release and Upload Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
+          body: "Automated release for version v${{ github.event.inputs.version }}"
+          draft: false
+          prerelease: false
+          files: artifacts/binaries-*/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      
+      
+
+
