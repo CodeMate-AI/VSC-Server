@@ -44,26 +44,20 @@ jobs:
       - name: Rename Artifacts (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          ls
           mv dist/windows/server client-server-${{ matrix.os }}
-          powershell -Command "Compress-Archive -Path 'client-server-${{matrix.os}}' -Destination 'client-server-${{matrix.os}}.zip'"
-          ls
         shell: bash
       
       - name: Rename Artifacts (macos)
         if: matrix.os == 'macos-latest'
         run: |
-          ls
           mv dist/darwin/server client-server-${{ matrix.os }}
-          zip -r client-server-${{ matrix.os }} client-server-${{matrix.os}}
-          ls
         shell: bash
       
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{matrix.os}}
-          path: client-server-${{matrix.os}}.zip
+          path: client-server-${{matrix.os}}
   release:
     needs: build
     runs-on: ubuntu-latest
