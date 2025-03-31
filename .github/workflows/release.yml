@@ -44,7 +44,7 @@ jobs:
       - name: Rename Artifacts (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          mv dist/windows/server client-server-${{ matrix.os }}
+          mv dist/windows/server.exe client-server-${{ matrix.os }}.exe
         shell: bash
       
       - name: Rename Artifacts (macos)
@@ -53,11 +53,20 @@ jobs:
           mv dist/darwin/server client-server-${{ matrix.os }}
         shell: bash
       
-      - name: Upload Artifact
+      - name: Upload Artifact (macos)
+        if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{matrix.os}}
           path: client-server-${{matrix.os}}
+      
+      - name: Upload Artifact (windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{matrix.os}}
+          path: client-server-${{matrix.os}}.exe
+
   release:
     needs: build
     runs-on: ubuntu-latest
