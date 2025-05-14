@@ -44,7 +44,13 @@ jobs:
       - name: Rename Artifacts (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          mv dist/windows/server.exe client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe
+          if [ -f dist/windows/server.exe ]; then
+            mv dist/windows/server.exe client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe
+          elif [ -f dist/server.exe ]; then
+            mv dist/server.exe client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe
+          else
+            echo "❌ Binary not found. Check build output." && exit 1
+          fi
         shell: bash
       
       - name: Rename Artifacts (macos)
