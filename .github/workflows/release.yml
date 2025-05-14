@@ -34,27 +34,93 @@ jobs:
           make install 
           make setup
       
-      - name: Check Makefile contents
-        run: cat Makefile
+      - name: Check Makefile and build process
+        run: |
+          echo "=== Makefile contents ==="
+          cat Makefile
+          echo "=== End of Makefile ==="
+          
+          # Check pyproject.toml if it exists
+          if [ -f "pyproject.toml" ]; then
+            echo "=== pyproject.toml contents ==="
+            cat pyproject.toml
+            echo "=== End of pyproject.toml ==="
+          fi
+          
+          # Check if there's a build script
+          if [ -f "build.py" ]; then
+            echo "=== build.py contents ==="
+            cat build.py
+            echo "=== End of build.py ==="
+          fi
         shell: bash
       
       - name: Build binary
-        run: make build
+        run: |
+          echo "Starting build process..."
+          # Run make build with verbose output if possible
+          make build V=1 VERBOSE=1 || make build
+          echo "Build process completed. Checking results..."
+          
+          # Check if dist directory exists
+          if [ ! -d "dist" ]; then
+            echo "Warning: 'dist' directory not found after build!"
+            echo "Current directory contents:"
+            ls -la
+          else
+            echo "dist directory exists. Contents:"
+            ls -la dist
+          fi
+        shell: bash
       
       - name: List build artifacts
         run: |
-          echo "Listing all files in dist directory:"
-          find dist -type f | sort
+          echo "Listing directory structure:"
+          find dist -type d | sort
+          echo "---------------------"
+          echo "Listing files in dist directory (limited to first 30):"
+          find dist -type f | sort | head -n 30
+        shell: bash
+      
+      - name: Explore directory structure for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "Looking for Windows binaries:"
+          dir dist /s /b | findstr ".exe"
+        shell: cmd
+      
+      - name: Explore directory structure for macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Looking for macOS binaries:"
+          find dist -type f -name "server" -o -name "*.bin" | xargs ls -la
         shell: bash
       
       - name: Rename Artifacts (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          BINARY_PATH=$(find dist -name "*.exe" -type f | head -n 1)
-          if [ -z "$BINARY_PATH" ]; then
-            echo "Error: No .exe file found in dist directory"
+          # Try direct path first
+          if [ -f "dist/server.exe" ]; then
+            BINARY_PATH="dist/server.exe"
+          elif [ -f "dist/win32/server.exe" ]; then
+            BINARY_PATH="dist/win32/server.exe"
+          elif [ -f "dist/win64/server.exe" ]; then
+            BINARY_PATH="dist/win64/server.exe"
+          elif [ -f "dist/windows/server.exe" ]; then
+            BINARY_PATH="dist/windows/server.exe"
+          else
+            # Fall back to find
+            echo "Searching for EXE files:"
+            FOUND_FILES=$(find dist -name "*.exe" -type f 2>/dev/null || echo "")
+            echo "$FOUND_FILES"
+            BINARY_PATH=$(echo "$FOUND_FILES" | grep -i server | head -n 1)
+          fi
+          
+          if [ -z "$BINARY_PATH" ] || [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: No server executable found"
             exit 1
           fi
+          
           echo "Found Windows binary at: $BINARY_PATH"
           cp "$BINARY_PATH" "client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe"
         shell: bash
@@ -62,11 +128,26 @@ jobs:
       - name: Rename Artifacts (macos)
         if: matrix.os == 'macos-latest'
         run: |
-          BINARY_PATH=$(find dist -type f -perm +111 -not -name "*.py" -not -name "*.sh" | head -n 1)
-          if [ -z "$BINARY_PATH" ]; then
-            echo "Error: No executable file found in dist directory"
+          # Try direct path first
+          if [ -f "dist/server" ]; then
+            BINARY_PATH="dist/server"
+          elif [ -f "dist/darwin/server" ]; then
+            BINARY_PATH="dist/darwin/server"
+          elif [ -f "dist/macos/server" ]; then
+            BINARY_PATH="dist/macos/server"
+          else
+            # Fall back to find with limited output
+            echo "Searching for executable files:"
+            FOUND_FILES=$(find dist -maxdepth 3 -type f -perm +111 2>/dev/null || echo "")
+            echo "$FOUND_FILES"
+            BINARY_PATH=$(echo "$FOUND_FILES" | grep -i server | head -n 1)
+          fi
+          
+          if [ -z "$BINARY_PATH" ] || [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: No server executable found"
             exit 1
           fi
+          
           echo "Found macOS binary at: $BINARY_PATH"
           cp "$BINARY_PATH" "client-server-${{ matrix.os }}-${{ github.event.inputs.version }}"
         shell: bash
