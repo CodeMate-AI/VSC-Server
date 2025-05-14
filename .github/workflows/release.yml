@@ -20,6 +20,7 @@ jobs:
         with:
           repository: CodeMate-AI/CLIENT_SERVER
           token: ${{secrets.ACCESS_TOKEN}}
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -33,24 +34,41 @@ jobs:
           make install 
           make setup
       
-      - name: Build binary (windows)
-        if: matrix.os == 'windows-latest'
+      - name: Check Makefile contents
+        run: cat Makefile
+        shell: bash
+      
+      - name: Build binary
         run: make build
       
-      - name: Build binary (macos)
-        if: matrix.os == 'macos-latest'
-        run: make build
-
+      - name: List build artifacts
+        run: |
+          echo "Listing all files in dist directory:"
+          find dist -type f | sort
+        shell: bash
+      
       - name: Rename Artifacts (windows)
         if: matrix.os == 'windows-latest'
         run: |
-          mv dist/windows/server.exe client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe
+          BINARY_PATH=$(find dist -name "*.exe" -type f | head -n 1)
+          if [ -z "$BINARY_PATH" ]; then
+            echo "Error: No .exe file found in dist directory"
+            exit 1
+          fi
+          echo "Found Windows binary at: $BINARY_PATH"
+          cp "$BINARY_PATH" "client-server-${{ matrix.os }}-${{ github.event.inputs.version }}.exe"
         shell: bash
       
       - name: Rename Artifacts (macos)
         if: matrix.os == 'macos-latest'
         run: |
-          mv dist/darwin/server client-server-${{ matrix.os }}-${{ github.event.inputs.version }}
+          BINARY_PATH=$(find dist -type f -perm +111 -not -name "*.py" -not -name "*.sh" | head -n 1)
+          if [ -z "$BINARY_PATH" ]; then
+            echo "Error: No executable file found in dist directory"
+            exit 1
+          fi
+          echo "Found macOS binary at: $BINARY_PATH"
+          cp "$BINARY_PATH" "client-server-${{ matrix.os }}-${{ github.event.inputs.version }}"
         shell: bash
       
       - name: Upload Artifact (macos)
@@ -105,7 +123,3 @@ jobs:
           files: artifacts/binaries-*/*
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      
-      
-
-
